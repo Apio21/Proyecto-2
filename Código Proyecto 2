@@ -1,0 +1,116 @@
+from typing import List
+import numpy as np
+import os
+
+def longest_common_substring(X: str, Y: str) -> int:
+
+    """   Calcula la longitud de la sub-palabra más larga entre 2 palabras.   """
+
+    m, n = len(X), len(Y)
+    result = 0
+    len_mat = np.zeros((2, n))
+    curr_row = 0
+
+    for i in range(m):
+        for j in range(n):
+            if i == 0 or j == 0:
+                len_mat[curr_row][j] = 0
+            elif X[i - 1] == Y[j - 1]:
+                len_mat[curr_row][j] = len_mat[1 - curr_row][j - 1] + 1
+                result = max(result, len_mat[curr_row][j])
+            else:
+                len_mat[curr_row][j] = 0
+        curr_row = 1 - curr_row
+    return result
+
+def word_break(word_list: List[str], word: str) -> bool:
+
+    """   Comprueba si una palabra se puede segmentar utilizando una lista de palabras como referencia.   """
+
+    if word == '':
+        return True
+    word_len = len(word)
+    return any([(word[:i] in word_list) and word_break(word_list, word[i:]) for i in range(1, word_len + 1)])
+
+def solve_word_wrap(words: List[int], n: int, k: int) -> int:
+
+    """   Resuelve el problema de ajuste de palabras para ajustar el texto en líneas con el ancho máximo especificado en el enunciado.    """
+
+    def square(n: int) -> int:
+
+        """   Función auxiliar 1 para solve_word_wrap().   """
+
+        return n * n
+
+    def solve_word_wrap_util(words: List[int], n: int, length: int, word_index: int, rem_length: int, memo: List[List[int]]) -> int:
+
+        """   Función auxiliar 2 para solve_word_wrap().   """
+
+        if word_index == n - 1:
+            memo[word_index][rem_length] = 0 if words[word_index] < rem_length else square(rem_length)
+            return memo[word_index][rem_length]
+
+        curr_word = words[word_index]
+        if curr_word < rem_length:
+            memo[word_index][rem_length] = min(
+                solve_word_wrap_util(words, n, length, word_index + 1, rem_length - curr_word if rem_length == length else rem_length - curr_word - 1, memo),
+                square(rem_length) + solve_word_wrap_util(words, n, length, word_index + 1, length - curr_word, memo)
+            )
+        else:
+            memo[word_index][rem_length] = square(rem_length) + solve_word_wrap_util(words, n, length, word_index + 1, length - curr_word, memo)
+        return memo[word_index][rem_length]
+
+    memo = [[-1] * (k + 1) for _ in range(n)]
+    return solve_word_wrap_util(words, n, k, 0, k, memo)
+
+def format_text(text: str, max_width: int) -> List[str]:
+
+    """   Justifica el texto según el ancho máximo especificado en el enunciado.   """
+
+    words = text.split()
+    lines = []
+    current_line = []
+    current_length = 0
+
+    for word in words:
+        if current_length + len(word) + len(current_line) > max_width:
+            for i in range(max_width - current_length):
+                current_line[i % (len(current_line) - 1 or 1)] += ' '
+            lines.append(''.join(current_line))
+            current_line, current_length = [], 0
+        current_line.append(word)
+        current_length += len(word)
+
+    lines.append(' '.join(current_line).ljust(max_width))
+    return lines
+
+def read_file_from_colab(file_path: str) -> str:
+
+    """   Lee el contenido de un archivo subido al colab.  """
+
+    if not os.path.exists(file_path):
+        print(f"No existe un archivo con el nombre {file_path}.")
+        return None
+    with open(file_path, 'r') as file:
+        return file.read()
+
+def main():
+
+    """   Función principal para justificar el texto leído desde un archivo del repositorio de GitHub y escribir el resultado en el repositorio.   """
+
+    input_file = input("Enter the name of the text file to search (e.g., texto.txt): ")
+    max_width = int(input("Enter the maximum width for justification: "))
+
+    text = read_file_from_colab(input_file)
+    if text is None:
+        return
+
+    formatted_text = format_text(text, max_width)
+
+    for line in formatted_text:
+        print(line)
+
+    return formatted_text
+
+if __name__ == "__main__":
+    main()
